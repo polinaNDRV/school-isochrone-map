@@ -12,7 +12,8 @@ from isochrone import IsochroneCalculator
 from shapely.geometry import Point
 from pyproj import Transformer
 
-app = Flask(__name__, static_folder='../frontend', static_url_path='')
+frontend_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'frontend')
+app = Flask(__name__, static_folder=frontend_path, static_url_path='')
 
 # Настройки
 USE_DATABASE_CACHE = True  # Включить SQLite кэширование
@@ -451,6 +452,25 @@ def get_stats():
     except Exception as e:
         print(f"Ошибка в /api/stats: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
+    
+@app.route('/')
+def index():
+    return send_from_directory(frontend_path, 'index.html')
+
+@app.route('/<path:path>') 
+def static_files(path):
+    if path == 'index.html':
+        return send_from_directory(frontend_path, 'index.html')
+
+    file_path = os.path.join(frontend_path, path)
+    if os.path.exists(file_path):
+        return send_from_directory(frontend_path, path)
+
+    if not path.startswith('/api'):
+        return send_from_directory(frontend_path, 'index.html')
+    
+    return jsonify({'error':'Not found'}), 404
+
 
 @app.route('/api/school/<int:school_id>', methods=['GET', 'OPTIONS'])
 def get_school_by_id(school_id):
