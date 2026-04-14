@@ -1,0 +1,372 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    overflow: hidden;
+}
+
+#map {
+    height: 100vh;
+    width: 100%;
+}
+
+/* Панель управления изохроной */
+.controls-panel {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 320px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    z-index: 1000;
+    overflow: hidden;
+}
+
+.panel-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 12px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.panel-header h3, .panel-header h4 {
+    margin: 0;
+    font-size: 16px;
+}
+
+.close-btn, .toggle-btn {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 0 5px;
+}
+
+.close-btn:hover, .toggle-btn:hover {
+    transform: scale(1.1);
+}
+
+.panel-content {
+    padding: 20px;
+}
+
+.input-group {
+    margin-bottom: 15px;
+}
+
+.input-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #333;
+    font-size: 14px;
+}
+
+.coord-inputs {
+    display: flex;
+    gap: 10px;
+}
+
+.coord-inputs input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.time-control {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+#timeSlider {
+    flex: 1;
+}
+
+#timeValue {
+    width: 60px;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    text-align: center;
+}
+
+select {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background: white;
+    cursor: pointer;
+}
+
+button {
+    width: 100%;
+    padding: 10px;
+    margin-top: 10px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.btn-secondary {
+    background: #f0f0f0;
+    color: #666;
+}
+
+.btn-secondary:hover {
+    background: #e0e0e0;
+}
+
+
+.route-panel {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    width: 280px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    z-index: 1000;
+}
+
+.btn-route-start {
+    background: #28a745;
+    color: white;
+}
+
+.btn-route-start:hover {
+    background: #218838;
+}
+
+.btn-route-end {
+    background: #dc3545;
+    color: white;
+}
+
+.btn-route-end:hover {
+    background: #c82333;
+}
+
+.btn-route-find {
+    background: #007bff;
+    color: white;
+}
+
+.btn-route-find:hover {
+    background: #0056b3;
+}
+
+.btn-route-clear {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-route-clear:hover {
+    background: #5a6268;
+}
+
+.route-info {
+    margin-top: 10px;
+    padding: 8px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    font-size: 12px;
+    text-align: center;
+}
+
+/* Панель школ */
+.schools-panel {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    width: 280px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    z-index: 1000;
+    max-height: 400px;
+    display: flex;
+    flex-direction: column;
+}
+
+.schools-panel .panel-content {
+    overflow-y: auto;
+    max-height: 350px;
+    padding: 10px;
+}
+
+.school-item {
+    padding: 10px;
+    margin-bottom: 8px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.school-item:hover {
+    background: #e9ecef;
+    transform: translateX(5px);
+}
+
+.school-item i {
+    color: #ff7800;
+    font-size: 16px;
+}
+
+.school-name {
+    flex: 1;
+    font-size: 13px;
+    color: #333;
+}
+
+/* Информационная панель */
+.info-panel {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    background: rgba(0,0,0,0.8);
+    color: white;
+    padding: 8px 15px;
+    border-radius: 20px;
+    font-size: 12px;
+    z-index: 1000;
+    backdrop-filter: blur(10px);
+}
+
+.info-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Статус панель */
+.status-panel {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0,0,0,0.9);
+    color: white;
+    padding: 15px 25px;
+    border-radius: 40px;
+    z-index: 2000;
+    backdrop-filter: blur(10px);
+    pointer-events: none;
+}
+
+.status-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 14px;
+}
+
+/* Анимации */
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.controls-panel {
+    animation: slideIn 0.3s ease;
+}
+
+/* Scrollbar стили */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Маркеры */
+.custom-div-icon {
+    background: transparent;
+    text-align: center;
+    font-size: 20px;
+    line-height: 1;
+}
+
+
+@media (max-width: 768px) {
+    .controls-panel, .route-panel, .schools-panel {
+        width: calc(100% - 40px);
+        max-width: 320px;
+    }
+    
+    .controls-panel {
+        top: 10px;
+        right: 10px;
+    }
+    
+    .route-panel {
+        top: 10px;
+        left: 10px;
+    }
+    
+    .schools-panel {
+        bottom: 10px;
+        left: 10px;
+    }
+}
+
+.loading {
+    text-align: center;
+    padding: 20px;
+    color: #999;
+}
+
+.loading:after {
+    content: '...';
+    animation: dots 1.5s steps(4, end) infinite;
+}
+
+@keyframes dots {
+    0%, 20% { content: '.'; }
+    40% { content: '..'; }
+    60%, 100% { content: '...'; }
+}

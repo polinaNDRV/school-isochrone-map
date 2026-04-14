@@ -1,0 +1,1353 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Школы Ижевска</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+        }
+
+        #map {
+            height: 100vh;
+            width: 100%;
+        }
+
+        .controls-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 380px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            z-index: 1000;
+            overflow: hidden;
+            transition: all 0.2s ease;
+        }
+        
+        .controls-panel.collapsed {
+            width: auto;
+            min-width: 160px;
+        }
+        
+        .controls-panel.collapsed .panel-content {
+            display: none;
+        }
+        
+        .controls-panel.collapsed .panel-header {
+            border-radius: 12px;
+        }
+
+        .panel-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .panel-header h3, .panel-header h4 {
+            margin: 0;
+            font-size: 16px;
+        }
+
+        .close-btn, .toggle-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 0 5px;
+            transition: transform 0.1s;
+        }
+
+        .close-btn:hover, .toggle-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .panel-content {
+            padding: 20px;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .coord-inputs {
+            display: flex;
+            gap: 10px;
+        }
+
+        .coord-inputs input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .time-control {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        #timeSlider {
+            flex: 1;
+        }
+
+        #timeValue {
+            width: 60px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            background: white;
+            cursor: pointer;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #666;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .route-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 280px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            z-index: 1000;
+        }
+
+        .btn-route-start {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-route-start:hover {
+            background: #218838;
+        }
+
+        .btn-route-end {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-route-end:hover {
+            background: #c82333;
+        }
+
+        .btn-route-find {
+            background: #007bff;
+            color: white;
+        }
+
+        .btn-route-find:hover {
+            background: #0056b3;
+        }
+
+        .btn-route-clear {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-route-clear:hover {
+            background: #5a6268;
+        }
+
+        .route-info {
+            margin-top: 10px;
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            font-size: 12px;
+            text-align: center;
+        }
+
+        .schools-panel {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            width: 300px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            z-index: 1000;
+            max-height: 450px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .schools-panel .panel-content {
+            overflow-y: auto;
+            max-height: 400px;
+            padding: 10px;
+        }
+
+        .school-item {
+            padding: 10px;
+            margin-bottom: 8px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .school-item:hover {
+            background: #e9ecef;
+            transform: translateX(5px);
+        }
+
+        .school-item i {
+            color: #ff7800;
+            font-size: 16px;
+        }
+
+        .school-name {
+            flex: 1;
+            font-size: 13px;
+            color: #333;
+        }
+
+        .status-panel {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.9);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 40px;
+            z-index: 2000;
+            backdrop-filter: blur(10px);
+            pointer-events: none;
+        }
+
+        .status-content {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 14px;
+        }
+
+        .custom-div-icon {
+            background: transparent;
+            text-align: center;
+            font-size: 20px;
+            line-height: 1;
+        }
+
+        .school-marker {
+            background: transparent;
+            text-align: center;
+            font-size: 28px;
+            line-height: 1;
+            cursor: pointer;
+            transition: transform 0.2s;
+            filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.3));
+        }
+        
+        .school-marker:hover {
+            transform: scale(1.2);
+            filter: drop-shadow(3px 3px 3px rgba(0,0,0,0.4));
+        }
+
+        .coord-marker {
+            background: transparent;
+            text-align: center;
+            font-size: 34px;
+            line-height: 1;
+            filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.3));
+            cursor: pointer;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #999;
+        }
+
+        .toggle-switch {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .toggle-switch label {
+            margin-left: 10px;
+            cursor: pointer;
+        }
+
+        .legend {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            z-index: 1000;
+            font-size: 12px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 3px;
+            margin-right: 8px;
+        }
+        
+        .legend-color.school {
+            width: 16px;
+            height: 16px;
+            background: #ff7800;
+            border-radius: 50%;
+        }
+        
+        .legend-color.school-polygon {
+            width: 20px;
+            height: 20px;
+            background: rgba(255, 120, 0, 0.3);
+            border: 1px solid #ff7800;
+        }
+        
+        .legend-color.isochrone {
+            background: #ff0000;
+            height: 3px;
+        }
+        
+        .legend-color.path {
+            background: #ff4444;
+            height: 3px;
+        }
+
+        .search-box {
+            position: relative;
+            margin-bottom: 10px;
+        }
+
+        .search-input-wrapper {
+            position: relative;
+            width: 100%;
+        }
+
+        .search-input-wrapper i.fa-search {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #999;
+            font-size: 13px;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .search-input-wrapper input {
+            width: 100%;
+            padding: 8px 12px;
+            padding-left: 32px;
+            padding-right: 32px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+
+        .search-input-wrapper input:focus {
+            outline: none;
+            border-color: #667eea !important;
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+        }
+
+        .search-clear-btn {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #999;
+            cursor: pointer;
+            padding: 4px 6px;
+            font-size: 12px;
+            border-radius: 50%;
+            width: auto;
+            margin: 0;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .search-clear-btn:hover {
+            color: #dc3545;
+            background: rgba(220, 53, 69, 0.1);
+            transform: translateY(-50%) scale(1.1);
+        }
+
+        #searchResultsCount {
+            padding: 2px 5px;
+            color: #667eea;
+            font-weight: 500;
+            font-size: 11px;
+            margin-top: 4px;
+            text-align: center;
+        }
+
+        .leaflet-popup-content {
+            min-width: 260px;
+            max-width: 320px;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .leaflet-popup-content hr {
+            margin: 8px 0;
+            border: none;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .delete-marker-btn {
+            background: #dc3545 !important;
+            color: white !important;
+            border: none;
+            border-radius: 6px;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-size: 13px;
+            width: 100%;
+            margin-top: 8px;
+            transition: all 0.3s;
+        }
+
+        .delete-marker-btn:hover {
+            background: #c82333 !important;
+            transform: scale(1.02);
+        }
+
+        .school-stats {
+            background: #f8f9fa;
+            border-radius: 6px;
+            padding: 6px;
+            margin-top: 6px;
+            font-size: 12px;
+        }
+        
+        .school-stats-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+        }
+        
+        .school-stats-label {
+            font-weight: 600;
+            color: #555;
+        }
+        
+        .school-stats-value {
+            color: #333;
+        }
+        
+        .isochrone-stats {
+            background: #e8f0fe;
+            border-radius: 6px;
+            padding: 6px;
+            margin-top: 8px;
+            font-size: 12px;
+            border-left: 3px solid #ff0000;
+        }
+        
+        .isochrone-stats-title {
+            font-weight: 700;
+            color: #ff0000;
+            margin-bottom: 4px;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .controls-panel, .route-panel, .schools-panel {
+                width: calc(100% - 40px);
+                max-width: 320px;
+            }
+            .controls-panel { top: 10px; right: 10px; }
+            .route-panel { top: 10px; left: 10px; }
+            .schools-panel { bottom: 10px; left: 10px; }
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    
+    <div class="controls-panel" id="controlsPanel">
+        <div class="panel-header" id="panelHeaderToggle">
+            <h3><i class="fas fa-draw-polygon"></i> Построение изохроны</h3>
+            <button class="close-btn" id="collapseIsochroneBtn">−</button>
+        </div>
+        
+        <div class="panel-content" id="isochronePanelContent">
+            <div class="input-group">
+                <label><i class="fas fa-map-marker-alt"></i> Координаты:</label>
+                <div class="coord-inputs">
+                    <input type="number" id="lat" step="any" placeholder="Широта" value="56.8528">
+                    <input type="number" id="lon" step="any" placeholder="Долгота" value="53.2095">
+                </div>
+            </div>
+            
+            <div class="input-group">
+                <label><i class="fas fa-clock"></i> Время (минуты):</label>
+                <div class="time-control">
+                    <input type="range" id="timeSlider" min="1" max="60" value="15">
+                    <input type="number" id="timeValue" min="1" max="60" value="15">
+                </div>
+            </div>
+            
+            <div class="input-group">
+                <label><i class="fas fa-shoe-prints"></i> Скорость (км/ч):</label>
+                <select id="speedSelect">
+                    <option value="3">Медленная (3 км/ч)</option>
+                    <option value="4">Спокойная (4 км/ч)</option>
+                    <option value="5" selected>Средняя (5 км/ч)</option>
+                    <option value="6">Быстрая (6 км/ч)</option>
+                    <option value="7">Очень быстрая (7 км/ч)</option>
+                </select>
+            </div>
+            
+            <button id="calculateBtn" class="btn-primary">
+                <i class="fas fa-play"></i> Построить изохрону
+            </button>
+            <button id="clearIsochroneBtn" class="btn-secondary">
+                <i class="fas fa-trash"></i> Очистить
+            </button>
+        </div>
+    </div>
+    
+    <div class="route-panel">
+        <div class="panel-header">
+            <h4><i class="fas fa-route"></i> Поиск маршрута</h4>
+            <button class="toggle-btn" onclick="toggleRoutePanel()">−</button>
+        </div>
+        <div class="panel-content">
+            <button id="selectRouteStartBtn" class="btn-route-start">
+                <i class="fas fa-map-marker-alt"></i> Выбрать начало маршрута
+            </button>
+            <button id="selectRouteEndBtn" class="btn-route-end">
+                <i class="fas fa-flag-checkered"></i> Выбрать конец маршрута
+            </button>
+            <button id="findRouteBtn" class="btn-route-find">
+                <i class="fas fa-search"></i> Найти кратчайший путь
+            </button>
+            <button id="clearRouteBtn" class="btn-route-clear">
+                <i class="fas fa-trash"></i> Очистить маршрут
+            </button>
+            <div id="routeInfo" class="route-info" style="display: none;"></div>
+        </div>
+    </div>
+    
+    <div class="schools-panel">
+        <div class="panel-header">
+            <h4><i class="fas fa-school"></i> Школы</h4>
+            <button class="toggle-btn" onclick="toggleSchoolsPanel()">−</button>
+        </div>
+        <div class="panel-content">
+            <div class="search-box">
+                <div class="search-input-wrapper">
+                    <i class="fas fa-search"></i>
+                    <input type="text" 
+                           id="schoolSearchInput" 
+                           placeholder="Поиск по названию школы..." 
+                           oninput="filterSchoolsList(this.value); toggleClearButton(this);">
+                    <button class="search-clear-btn" 
+                            onclick="clearSearch();" 
+                            style="display: none;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div id="searchResultsCount" style="display: none;"></div>
+            </div>
+            
+            <div class="toggle-switch">
+                <input type="checkbox" id="showSchoolsToggle" checked>
+                <label for="showSchoolsToggle">Показывать школы на карте</label>
+            </div>
+            <div class="toggle-switch">
+                <input type="checkbox" id="showSchoolPolygonsToggle" checked>
+                <label for="showSchoolPolygonsToggle">Показывать полигоны школ</label>
+            </div>
+            <div id="schoolsList">
+                <div class="loading">Загрузка школ...</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="legend">
+        <div class="legend-item">
+            <div class="legend-color school-polygon"></div>
+            <span>Территории школ</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color isochrone" style="background: #ff0000;"></div>
+            <span>Изохрона</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #00ff00;"></div>
+            <span>Дороги</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color path" style="background: #ff4444;"></div>
+            <span>Маршрут</span>
+        </div>
+    </div>
+    
+    <div class="status-panel" id="statusPanel" style="display: none;">
+        <div class="status-content">
+            <i class="fas fa-spinner fa-spin"></i>
+            <span id="statusMessage">Загрузка...</span>
+        </div>
+    </div>
+    
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        let map;
+        let isochroneLayer = null;
+        let reachableRoadsLayer = null;
+        let schoolsLayer = null;
+        let schoolPolygonsLayer = null;
+        let pathLayer = null;
+        let routeStartMarker = null;
+        let routeEndMarker = null;
+        let isSelectingRouteStart = false;
+        let isSelectingRouteEnd = false;
+        let schoolsVisible = true;
+        let polygonsVisible = true;
+        let coordMarker = null;
+        
+        let schoolIsochroneData = new Map();
+        
+        let allSchoolsData = [];
+        let filteredSchoolsData = [];
+        let searchTimeout = null;
+
+        const API_BASE_URL = window.location.origin + '/api';
+
+        function createCoordMarker(lat, lon) {
+            const marker = L.marker([lat, lon], {
+                icon: L.divIcon({
+                    html: '<div style="font-size: 32px;">📍</div>',
+                    iconSize: [32, 32],
+                    iconAnchor: [16, 32],
+                    className: 'coord-marker'
+                }),
+                zIndexOffset: 1000
+            });
+            
+            marker.bindPopup(`
+                <div style="text-align: center;">
+                    <b>📍 Точка на карте</b><br>
+                    <hr>
+                    <div>Широта: ${lat.toFixed(6)}</div>
+                    <div>Долгота: ${lon.toFixed(6)}</div>
+                    <button class="delete-marker-btn" onclick="deleteCoordMarker()">
+                        <i class="fas fa-trash"></i> Удалить маркер
+                    </button>
+                </div>
+            `, {
+                closeButton: true
+            });
+            
+            return marker;
+        }
+        
+        function updateCoordMarker() {
+            const lat = parseFloat(document.getElementById('lat').value);
+            const lon = parseFloat(document.getElementById('lon').value);
+            
+            if (isNaN(lat) || isNaN(lon)) {
+                return;
+            }
+            
+            if (coordMarker) {
+                map.removeLayer(coordMarker);
+            }
+            
+            coordMarker = createCoordMarker(lat, lon);
+            coordMarker.addTo(map);
+        }
+        
+        function deleteCoordMarker() {
+            if (coordMarker) {
+                map.removeLayer(coordMarker);
+                coordMarker = null;
+                showStatus('Маркер удален с карты', 'success');
+            }
+        }
+
+        function toggleIsochronePanel() {
+            const panel = document.getElementById('controlsPanel');
+            const collapseBtn = document.getElementById('collapseIsochroneBtn');
+            if (panel.classList.contains('collapsed')) {
+                panel.classList.remove('collapsed');
+                collapseBtn.textContent = '−';
+            } else {
+                panel.classList.add('collapsed');
+                collapseBtn.textContent = '+';
+            }
+        }
+
+        function formatSchoolTooltip(school) {
+            let tooltip = school.name || 'Школа';
+            if (school.street) {
+                tooltip += `\n📍 ${school.street}`;
+                if (school.housenumber) tooltip += `, ${school.housenumber}`;
+            }
+            if (school.ref) tooltip += `\n🏢 Корпус: ${school.ref}`;
+            return tooltip;
+        }
+
+        function createSchoolIcon(school) {
+            const tooltip = formatSchoolTooltip(school);
+            const escapedTooltip = tooltip.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+            return L.divIcon({
+                html: `<div class="school-marker" title="${escapedTooltip}">🏫</div>`,
+                iconSize: [28, 28],
+                iconAnchor: [14, 14],
+                popupAnchor: [0, -14],
+                className: 'custom-div-icon'
+            });
+        }
+
+        function updateSchoolPopup(marker, school, isochroneStats) {
+            const lat = school.lat;
+            const lon = school.lon;
+            
+            let statsHtml = '';
+            if (school.project_capacity && school.project_capacity !== '') {
+                statsHtml += `<div class="school-stats-item"><span class="school-stats-label">📊 Проектная мощность:</span><span class="school-stats-value">${school.project_capacity} мест</span></div>`;
+            }
+            if (school.actual_occupancy && school.actual_occupancy !== '') {
+                statsHtml += `<div class="school-stats-item"><span class="school-stats-label">👥 Фактическая загрузка:</span><span class="school-stats-value">${school.actual_occupancy} чел.</span></div>`;
+            }
+            if (school.occupancy_by_order && school.occupancy_by_order !== '') {
+                statsHtml += `<div class="school-stats-item"><span class="school-stats-label">📋 По приказу:</span><span class="school-stats-value">${school.occupancy_by_order} чел.</span></div>`;
+            }
+            if (school.plan_occupancy && school.plan_occupancy !== '') {
+                statsHtml += `<div class="school-stats-item"><span class="school-stats-label">📈 Плановая (5-10 лет):</span><span class="school-stats-value">${school.plan_occupancy} чел.</span></div>`;
+            }
+            
+            let addressHtml = '';
+            if (school.street) {
+                addressHtml = `<div>📍 ${school.street}${school.housenumber ? ', ' + school.housenumber : ''}</div>`;
+            }
+            
+            let refHtml = '';
+            if (school.ref && school.ref !== '') {
+                refHtml = `<div> Корпус: ${school.ref}</div>`;
+            }
+            
+            let isochroneHtml = '';
+            if (isochroneStats) {
+                isochroneHtml = `
+                    <div class="isochrone-stats">
+                        <div class="isochrone-stats-title">📊 ИЗОХРОНА</div>
+                        <div class="school-stats-item">
+                            <span class="school-stats-label"> Время:</span>
+                            <span class="school-stats-value">${isochroneStats.time_minutes} мин</span>
+                        </div>
+                        <div class="school-stats-item">
+                            <span class="school-stats-label"> Скорость:</span>
+                            <span class="school-stats-value">${isochroneStats.walking_speed_kmh} км/ч</span>
+                        </div>
+                        <div class="school-stats-item">
+                            <span class="school-stats-label"> Площадь:</span>
+                            <span class="school-stats-value">${isochroneStats.area_sq_meters.toLocaleString()} м² (${isochroneStats.area_hectares} га)</span>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            const popupContent = `
+                <div style="min-width: 240px;">
+                    <b style="font-size: 14px;">🏫 ${school.name}</b>
+                    <hr>
+                    ${addressHtml}
+                    ${refHtml}
+                    ${statsHtml ? `<div class="school-stats">${statsHtml}</div>` : ''}
+                    ${isochroneHtml}
+                    <button onclick="calculateIsochroneForSchool(${lat}, ${lon}, '${school.name.replace(/'/g, "\\'")}')" 
+                            style="margin-top: 10px; padding: 6px 12px; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer; width: 100%;">
+                        <i class="fas fa-draw-polygon"></i> Построить изохрону
+                    </button>
+                </div>
+            `;
+            
+            marker.bindPopup(popupContent);
+        }
+
+        // Расчет изохроны для школы
+        async function calculateIsochroneForSchool(lat, lon, schoolName) {
+            const time = parseInt(document.getElementById('timeValue').value);
+            const speed = parseFloat(document.getElementById('speedSelect').value);
+            
+            showStatus(`Построение изохроны для ${schoolName}...`, 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/calculate-isochrone`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({lat: lat, lon: lon, time: time, speed: speed})
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+
+                    if (isochroneLayer) map.removeLayer(isochroneLayer);
+                    if (reachableRoadsLayer) map.removeLayer(reachableRoadsLayer);
+                    
+                    if (data.isochrone) {
+                        isochroneLayer = L.geoJSON(data.isochrone, {
+                            style: { color: '#ff0000', weight: 3, fillColor: '#ff0000', fillOpacity: 0.15, dashArray: '5, 5' }
+                        }).addTo(map);
+                    }
+                    
+                    if (data.reachable_roads && data.reachable_roads.features) {
+                        reachableRoadsLayer = L.geoJSON(data.reachable_roads, {
+                            style: { color: '#00ff00', weight: 3, opacity: 0.7 }
+                        }).addTo(map);
+                    }
+                    
+                    // Обновляем координаты в панели
+                    document.getElementById('lat').value = lat;
+                    document.getElementById('lon').value = lon;
+                    updateCoordMarker();
+                    
+                    // Сохраняем статистику для этой школы
+                    const stats = data.stats;
+                    const schoolKey = `${lat},${lon}`;
+                    schoolIsochroneData.set(schoolKey, stats);
+                    
+
+                    if (schoolsLayer) {
+                        schoolsLayer.eachLayer(marker => {
+                            const markerLatLng = marker.getLatLng();
+                            if (Math.abs(markerLatLng.lat - lat) < 0.0001 && 
+                                Math.abs(markerLatLng.lng - lon) < 0.0001) {
+                                // Находим данные школы
+                                const schoolData = allSchoolsData.find(s => 
+                                    Math.abs(parseFloat(s.lat) - lat) < 0.0001 && 
+                                    Math.abs(parseFloat(s.lon) - lon) < 0.0001
+                                );
+                                if (schoolData) {
+                                    updateSchoolPopup(marker, schoolData, stats);
+                                    marker.openPopup();
+                                }
+                            }
+                        });
+                    }
+                    
+                    showStatus(`Изохрона для ${schoolName} построена! ${time} мин, ${speed} км/ч`, 'success');
+                    
+                    if (isochroneLayer) {
+                        const bounds = isochroneLayer.getBounds();
+                        if (bounds.isValid()) map.fitBounds(bounds);
+                    }
+                } else {
+                    showStatus(data.error || 'Ошибка построения изохроны', 'error');
+                }
+            } catch (error) {
+                console.error('Ошибка:', error);
+                showStatus('Ошибка соединения с сервером', 'error');
+            }
+        }
+
+        async function loadSchoolsWithIcons() {
+            try {
+                showStatus('Загрузка школ...', 'info');
+                const response = await fetch(`${API_BASE_URL}/schools`);
+                const data = await response.json();
+                
+                if (data.success && data.schools && data.schools.length > 0) {
+                    if (schoolsLayer) map.removeLayer(schoolsLayer);
+                    schoolsLayer = L.layerGroup();
+                    
+                    data.schools.forEach((school) => {
+                        const lat = parseFloat(school.lat);
+                        const lon = parseFloat(school.lon);
+                        if (isNaN(lat) || isNaN(lon)) return;
+                        
+                        const marker = L.marker([lat, lon], {
+                            icon: createSchoolIcon(school),
+                            title: formatSchoolTooltip(school),
+                            riseOnHover: true
+                        });
+                        
+                        // Проверяем, есть ли сохраненные данные изохроны для этой школы
+                        const schoolKey = `${lat},${lon}`;
+                        const savedStats = schoolIsochroneData.get(schoolKey);
+                        updateSchoolPopup(marker, school, savedStats);
+                        
+                        schoolsLayer.addLayer(marker);
+                    });
+                    
+                    if (schoolsVisible) schoolsLayer.addTo(map);
+                    showStatus(`✅ Загружено ${data.schools.length} школ`, 'success');
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки школ:', error);
+                showStatus('Ошибка загрузки школ', 'error');
+            }
+        }
+
+        async function loadSchoolPolygons() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/schools-polygons-geojson`);
+                const data = await response.json();
+                
+                schoolPolygonsLayer = L.geoJSON(data, {
+                    style: { color: '#ff7800', weight: 2, fillColor: '#ff7800', fillOpacity: 0.2, dashArray: '5, 5' },
+                    onEachFeature: (feature, layer) => {
+                        if (feature.properties?.name) {
+                            layer.bindPopup(`<b>🏫 ${feature.properties.name}</b><br><i>Территория школы</i>`);
+                        }
+                    }
+                });
+                
+                if (polygonsVisible) schoolPolygonsLayer.addTo(map);
+                showStatus('Полигоны школ загружены', 'success');
+            } catch (error) {
+                console.error('Ошибка загрузки полигонов школ:', error);
+            }
+        }
+
+        function filterSchoolsList(searchText) {
+            if (searchTimeout) clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => performSearch(searchText), 300);
+        }
+
+        function performSearch(searchText) {
+            searchText = searchText.toLowerCase().trim();
+            if (!allSchoolsData.length) return;
+            
+            if (searchText === '') {
+                filteredSchoolsData = [...allSchoolsData];
+                displaySchoolsList(filteredSchoolsData);
+                updateSearchResultsCount(filteredSchoolsData.length, allSchoolsData.length);
+                highlightAllSchools();
+            } else {
+                filteredSchoolsData = allSchoolsData.filter(school => 
+                    (school.name && school.name.toLowerCase().includes(searchText)) ||
+                    (school.street && school.street.toLowerCase().includes(searchText)) ||
+                    (school.housenumber && school.housenumber.toString().toLowerCase().includes(searchText))
+                );
+                displaySchoolsList(filteredSchoolsData);
+                updateSearchResultsCount(filteredSchoolsData.length, allSchoolsData.length);
+                highlightFilteredSchools(filteredSchoolsData);
+            }
+        }
+
+        function displaySchoolsList(schools) {
+            const schoolsList = document.getElementById('schoolsList');
+            if (!schoolsList) return;
+            
+            if (schools.length === 0) {
+                schoolsList.innerHTML = `<div style="text-align: center; padding: 20px; color: #999;"><i class="fas fa-search" style="font-size: 24px;"></i><p>Школы не найдены</p></div>`;
+                return;
+            }
+            
+            let html = '';
+            schools.forEach(school => {
+                let additionalInfo = '';
+                if (school.actual_occupancy && school.actual_occupancy !== '') {
+                    additionalInfo += `<br><small>👥 ${school.actual_occupancy} чел.</small>`;
+                }
+                if (school.project_capacity && school.project_capacity !== '') {
+                    additionalInfo += `<br><small>📊 ${school.project_capacity} мест</small>`;
+                }
+                if (school.street) {
+                    additionalInfo += `<br><small>📍 ${school.street}${school.housenumber ? ', ' + school.housenumber : ''}</small>`;
+                }
+                
+                let schoolName = school.name || 'Школа';
+                const searchInput = document.getElementById('schoolSearchInput');
+                if (searchInput && searchInput.value.trim()) {
+                    const searchText = searchInput.value.trim().toLowerCase();
+                    const regex = new RegExp(`(${searchText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+                    schoolName = schoolName.replace(regex, '<span style="background: #ffeb3b;">$1</span>');
+                }
+                
+                html += `
+                    <div class="school-item" onclick="selectSchoolFromList(${school.lat}, ${school.lon}, '${school.name.replace(/'/g, "\\'")}')">
+                        <i class="fas fa-school"></i>
+                        <div class="school-name">${schoolName}${additionalInfo}</div>
+                        <i class="fas fa-chevron-right" style="color: #999; font-size: 12px;"></i>
+                    </div>
+                `;
+            });
+            schoolsList.innerHTML = html;
+        }
+
+        function updateSearchResultsCount(filtered, total) {
+            const countElement = document.getElementById('searchResultsCount');
+            if (countElement) {
+                countElement.style.display = filtered < total ? 'block' : 'none';
+                if (filtered < total) countElement.innerHTML = `Найдено: ${filtered} из ${total} школ`;
+            }
+        }
+
+        function highlightFilteredSchools(filteredSchools) {
+            if (!schoolsLayer) return;
+            const filteredSet = new Set(filteredSchools.map(s => `${s.lat},${s.lon}`));
+            schoolsLayer.eachLayer(marker => {
+                const latLng = marker.getLatLng();
+                const key = `${latLng.lat},${latLng.lng}`;
+                if (filteredSet.has(key)) {
+                    if (!map.hasLayer(marker)) marker.addTo(map);
+                    marker.setOpacity(1);
+                } else {
+                    if (map.hasLayer(marker)) map.removeLayer(marker);
+                }
+            });
+        }
+
+        function highlightAllSchools() {
+            if (!schoolsLayer) return;
+            schoolsLayer.eachLayer(marker => {
+                if (!map.hasLayer(marker)) marker.addTo(map);
+                marker.setOpacity(1);
+            });
+        }
+
+        function clearSearch() {
+            const searchInput = document.getElementById('schoolSearchInput');
+            if (searchInput) {
+                searchInput.value = '';
+                filterSchoolsList('');
+                const clearBtn = document.querySelector('.search-clear-btn');
+                if (clearBtn) clearBtn.style.display = 'none';
+            }
+        }
+
+        function toggleClearButton(input) {
+            const clearBtn = document.querySelector('.search-clear-btn');
+            if (clearBtn) clearBtn.style.display = input.value ? 'flex' : 'none';
+        }
+
+        async function loadSchoolsList() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/schools`);
+                const data = await response.json();
+                if (data.success && data.schools) {
+                    allSchoolsData = data.schools;
+                    filteredSchoolsData = [...allSchoolsData];
+                    displaySchoolsList(allSchoolsData);
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки списка школ:', error);
+                document.getElementById('schoolsList').innerHTML = '<div class="loading">Ошибка загрузки школ</div>';
+            }
+        }
+
+        function selectSchoolFromList(lat, lon, name) {
+            document.getElementById('lat').value = lat;
+            document.getElementById('lon').value = lon;
+            updateCoordMarker();
+            showStatus(`Выбрана школа: ${name}. Нажмите "Построить изохрону" для расчета`, 'success');
+            map.setView([lat, lon], 16);
+        }
+
+        async function calculateIsochrone() {
+            const lat = parseFloat(document.getElementById('lat').value);
+            const lon = parseFloat(document.getElementById('lon').value);
+            let time = parseInt(document.getElementById('timeValue').value);
+            const speed = parseFloat(document.getElementById('speedSelect').value);
+            
+            if (isNaN(lat) || isNaN(lon)) {
+                showStatus('Введите корректные координаты', 'error');
+                return;
+            }
+            
+            if (isNaN(time) || time < 1) {
+                time = 15;
+                document.getElementById('timeValue').value = 15;
+                document.getElementById('timeSlider').value = 15;
+            }
+            
+            updateCoordMarker();
+            showStatus('Построение изохроны...', 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/calculate-isochrone`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({lat: lat, lon: lon, time: time, speed: speed})
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    if (isochroneLayer) map.removeLayer(isochroneLayer);
+                    if (reachableRoadsLayer) map.removeLayer(reachableRoadsLayer);
+                    
+                    if (data.isochrone) {
+                        isochroneLayer = L.geoJSON(data.isochrone, {
+                            style: { color: '#ff0000', weight: 3, fillColor: '#ff0000', fillOpacity: 0.15, dashArray: '5, 5' }
+                        }).addTo(map);
+                    }
+                    
+                    if (data.reachable_roads && data.reachable_roads.features) {
+                        reachableRoadsLayer = L.geoJSON(data.reachable_roads, {
+                            style: { color: '#00ff00', weight: 3, opacity: 0.7 }
+                        }).addTo(map);
+                    }
+                    
+                    showStatus(`Изохрона построена! ${time} мин, ${speed} км/ч`, 'success');
+                    
+                    if (isochroneLayer) {
+                        const bounds = isochroneLayer.getBounds();
+                        if (bounds.isValid()) map.fitBounds(bounds);
+                    }
+                } else {
+                    showStatus(data.error || 'Ошибка построения изохроны', 'error');
+                }
+            } catch (error) {
+                console.error('Ошибка:', error);
+                showStatus('Ошибка соединения с сервером', 'error');
+            }
+        }
+
+        function clearIsochrone() {
+            if (isochroneLayer) { map.removeLayer(isochroneLayer); isochroneLayer = null; }
+            if (reachableRoadsLayer) { map.removeLayer(reachableRoadsLayer); reachableRoadsLayer = null; }
+            showStatus('Изохроны очищены', 'success');
+        }
+
+        async function findShortestPath() {
+            if (!routeStartMarker || !routeEndMarker) {
+                showStatus('Сначала выберите начальную и конечную точки маршрута!', 'error');
+                return;
+            }
+            
+            const start = routeStartMarker.getLatLng();
+            const end = routeEndMarker.getLatLng();
+            showStatus('Поиск кратчайшего пути...', 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/shortest-path`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ start_lat: start.lat, start_lon: start.lng, end_lat: end.lat, end_lon: end.lng })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    if (pathLayer) map.removeLayer(pathLayer);
+                    pathLayer = L.geoJSON(data.path, {
+                        style: { color: '#ff4444', weight: 5, opacity: 0.9, dashArray: '5, 10' }
+                    }).addTo(map);
+                    
+                    const routeInfo = document.getElementById('routeInfo');
+                    routeInfo.style.display = 'block';
+                    routeInfo.innerHTML = `<strong>📏 Расстояние:</strong> ${data.distance_meters.toFixed(1)} метров<br><strong>📐 В километрах:</strong> ${data.distance_km.toFixed(2)} км`;
+                    
+                    const bounds = pathLayer.getBounds();
+                    if (bounds.isValid()) map.fitBounds(bounds);
+                    showStatus(`Путь найден! Расстояние: ${data.distance_meters.toFixed(1)} метров`, 'success');
+                } else {
+                    showStatus(data.error || 'Путь не найден', 'error');
+                }
+            } catch (error) {
+                showStatus('Ошибка при поиске пути', 'error');
+            }
+        }
+
+        function clearRoute() {
+            if (pathLayer) { map.removeLayer(pathLayer); pathLayer = null; }
+            if (routeStartMarker) { map.removeLayer(routeStartMarker); routeStartMarker = null; }
+            if (routeEndMarker) { map.removeLayer(routeEndMarker); routeEndMarker = null; }
+            const routeInfo = document.getElementById('routeInfo');
+            if (routeInfo) { routeInfo.style.display = 'none'; routeInfo.innerHTML = ''; }
+            showStatus('Маршрут очищен', 'success');
+        }
+
+        function showStatus(message, type) {
+            const statusPanel = document.getElementById('statusPanel');
+            const statusMessage = document.getElementById('statusMessage');
+            statusMessage.innerHTML = message;
+            statusPanel.style.display = 'block';
+            
+            const icon = statusPanel.querySelector('.status-content i');
+            icon.className = type === 'success' ? 'fas fa-check-circle' : (type === 'error' ? 'fas fa-exclamation-circle' : 'fas fa-spinner fa-spin');
+            icon.style.color = type === 'success' ? '#28a745' : (type === 'error' ? '#dc3545' : '#007bff');
+            
+            setTimeout(() => { statusPanel.style.display = 'none'; }, 3000);
+        }
+
+        function toggleRoutePanel() {
+            const content = document.querySelector('.route-panel .panel-content');
+            const btn = document.querySelector('.route-panel .toggle-btn');
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                btn.textContent = '−';
+            } else {
+                content.style.display = 'none';
+                btn.textContent = '+';
+            }
+        }
+
+        function toggleSchoolsPanel() {
+            const content = document.querySelector('.schools-panel .panel-content');
+            const btn = document.querySelector('.schools-panel .toggle-btn');
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                btn.textContent = '−';
+            } else {
+                content.style.display = 'none';
+                btn.textContent = '+';
+            }
+        }
+
+        function initMap() {
+            map = L.map('map').setView([56.8528, 53.2095], 13);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; CartoDB',
+                subdomains: 'abcd', maxZoom: 19, minZoom: 3
+            }).addTo(map);
+            
+            map.on('click', function(e) {
+                if (isSelectingRouteStart) {
+                    if (routeStartMarker) map.removeLayer(routeStartMarker);
+                    routeStartMarker = L.marker(e.latlng, { icon: L.divIcon({html: '🚩', iconSize: [24, 24], className: 'custom-div-icon'}) }).addTo(map);
+                    routeStartMarker.bindPopup('Начало маршрута').openPopup();
+                    isSelectingRouteStart = false;
+                    showStatus('Начальная точка выбрана! Теперь выберите конечную точку', 'success');
+                } else if (isSelectingRouteEnd) {
+                    if (routeEndMarker) map.removeLayer(routeEndMarker);
+                    routeEndMarker = L.marker(e.latlng, { icon: L.divIcon({html: '🏁', iconSize: [24, 24], className: 'custom-div-icon'}) }).addTo(map);
+                    routeEndMarker.bindPopup('Конец маршрута').openPopup();
+                    isSelectingRouteEnd = false;
+                    showStatus('Конечная точка выбрана! Нажмите "Найти кратчайший путь"', 'success');
+                } else {
+                    const lat = e.latlng.lat.toFixed(6);
+                    const lon = e.latlng.lng.toFixed(6);
+                    document.getElementById('lat').value = lat;
+                    document.getElementById('lon').value = lon;
+                    updateCoordMarker();
+                    showStatus('Координаты обновлены, маркер добавлен', 'success');
+                }
+            });
+            
+            const initialLat = parseFloat(document.getElementById('lat').value);
+            const initialLon = parseFloat(document.getElementById('lon').value);
+            if (!isNaN(initialLat) && !isNaN(initialLon)) {
+                updateCoordMarker();
+            }
+            
+            loadSchoolsWithIcons();
+            loadSchoolPolygons();
+            loadSchoolsList();
+            
+            document.getElementById('showSchoolsToggle').addEventListener('change', function(e) {
+                schoolsVisible = e.target.checked;
+                if (schoolsLayer) schoolsVisible ? schoolsLayer.addTo(map) : map.removeLayer(schoolsLayer);
+            });
+            
+            document.getElementById('showSchoolPolygonsToggle').addEventListener('change', function(e) {
+                polygonsVisible = e.target.checked;
+                if (schoolPolygonsLayer) polygonsVisible ? schoolPolygonsLayer.addTo(map) : map.removeLayer(schoolPolygonsLayer);
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const timeSlider = document.getElementById('timeSlider');
+            const timeValue = document.getElementById('timeValue');
+            if (timeSlider && timeValue) {
+                timeSlider.addEventListener('input', () => { timeValue.value = timeSlider.value; });
+                timeValue.addEventListener('input', () => { timeSlider.value = timeValue.value; });
+            }
+            
+            document.getElementById('calculateBtn').onclick = calculateIsochrone;
+            document.getElementById('clearIsochroneBtn').onclick = clearIsochrone;
+            
+            document.getElementById('lat').addEventListener('input', () => updateCoordMarker());
+            document.getElementById('lon').addEventListener('input', () => updateCoordMarker());
+            
+            document.getElementById('selectRouteStartBtn').onclick = () => { isSelectingRouteStart = true; isSelectingRouteEnd = false; showStatus('Кликните на карте для выбора НАЧАЛА маршрута', 'info'); };
+            document.getElementById('selectRouteEndBtn').onclick = () => { isSelectingRouteEnd = true; isSelectingRouteStart = false; showStatus('Кликните на карте для выбора КОНЦА маршрута', 'info'); };
+            document.getElementById('findRouteBtn').onclick = findShortestPath;
+            document.getElementById('clearRouteBtn').onclick = clearRoute;
+            
+            const collapseBtn = document.getElementById('collapseIsochroneBtn');
+            const headerToggle = document.getElementById('panelHeaderToggle');
+            if (collapseBtn) collapseBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleIsochronePanel(); });
+            if (headerToggle) headerToggle.addEventListener('click', (e) => { if (e.target === headerToggle || (e.target.closest('.panel-header') === headerToggle && e.target !== collapseBtn)) toggleIsochronePanel(); });
+            
+            initMap();
+        });
+    </script>
+</body>
+</html>

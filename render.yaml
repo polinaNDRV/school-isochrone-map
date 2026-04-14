@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: school-isochrone-map
+    runtime: python
+    repo: https://github.com/polinaNDRV/school-isochrone-map
+    plan: free
+    region: frankfurt
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn backend.app:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
